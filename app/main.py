@@ -29,7 +29,7 @@ def verify_api_key(key: str = Security(api_key_header)):
 
 @app.get("/v1/messages/")
 def get_message(api_key: str = Security(verify_api_key)):
-    livewMessageFile = open("./app/livemessage.json", "r")
+    livewMessageFile = open("./livemessage.json", "r")
     liveMessage = json.load(livewMessageFile)
 
     if liveMessage["currentTime"] != "None":
@@ -52,7 +52,7 @@ def get_message(api_key: str = Security(verify_api_key)):
 
 @app.get("/v1/messages/all")
 def get_all_messages(api_key: str = Security(verify_api_key)):
-    messageFile = open("./app/messages.json", "r")
+    messageFile = open("./messages.json", "r")
     messages = json.load(messageFile)
     return {"messages": messages}
 
@@ -60,13 +60,13 @@ def get_all_messages(api_key: str = Security(verify_api_key)):
 def push_message(line_one: str, line_two: str, api_key: str = Security(verify_api_key)):
     if len(line_one) > 16 or len(line_two) > 16:
         raise HTTPException(status_code=400, detail="Line one and line two must be less than 16 characters long")
-    for message in json.load(open("./app/messages.json", "r")):
+    for message in json.load(open("./messages.json", "r")):
         if line_one.strip() == message["line_one"].strip() and line_two.strip() == message["line_two"].strip():
             raise HTTPException(status_code=400, detail="Message already exists")
-    messageFile = open("./app/messages.json", "r") 
+    messageFile = open("./messages.json", "r") 
     messages = json.load(messageFile)
     messages.append({"line_one": line_one, "line_two": line_two})
-    with open("./app/messages.json", "w") as f:
+    with open("./messages.json", "w") as f:
         json.dump(messages, f, indent=2)
     return {"message": {"line_one": line_one, "line_two": line_two},"status": "success"}        
 
@@ -75,7 +75,7 @@ def push_current_message(line_one: str, line_two: str, displayTimeSeconds: int, 
     now = datetime.now()
     if len(line_one) > 16 or len(line_two) > 16:
         raise HTTPException(status_code=400, detail="Line one and line two must be less than 16 characters long")
-    with open ("./app/livemessage.json", "w") as f:
+    with open ("./livemessage.json", "w") as f:
         json.dump(
             {"line_one": line_one, 
              "line_two": line_two, 
