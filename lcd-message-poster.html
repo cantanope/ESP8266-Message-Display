@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LCD Message Poster</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Chakra+Petch:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0c0f;
+      --surface: #111418;
+      --surface2: #181c22;
+      --border: #1e2530;
+      --accent: #00e5ff;
+      --accent2: #00ff9d;
+      --warn: #ff6b35;
+      --text: #c8d8e8;
+      --text-dim: #4a5a6a;
+      --lcd-bg: #0d1a0d;
+      --lcd-on: #33ff66;
+      --lcd-dim: #0a3a0a;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-ui: 'Chakra Petch', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 560px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .header-tag {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 0.5rem;
+    }
+
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #fff;
+      text-transform: uppercase;
+    }
+
+    .header h1 span {
+      color: var(--accent);
+    }
+
+    .header-sub {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 0.4rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* LCD Preview */
+    .lcd-wrap {
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .lcd {
+      background: var(--lcd-bg);
+      border: 2px solid #1a3a1a;
+      border-radius: 6px;
+      padding: 1rem 1.4rem;
+      width: 100%;
+      box-shadow:
+        0 0 0 1px #0a1a0a,
+        0 0 20px rgba(0,255,100,0.08),
+        inset 0 0 20px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .lcd::before {
+      content: 'LCD PREVIEW';
+      position: absolute;
+      top: -0.55rem;
+      left: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.55rem;
+      color: var(--accent2);
+      background: var(--bg);
+      padding: 0 0.4rem;
+      letter-spacing: 0.2em;
+    }
+
+    .lcd-line {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      color: var(--lcd-on);
+      height: 1.8rem;
+      display: flex;
+      align-items: center;
+      letter-spacing: 0.12em;
+      text-shadow: 0 0 8px rgba(51,255,102,0.6);
+      white-space: pre;
+      overflow: hidden;
+    }
+
+    .lcd-line.dim {
+      color: var(--lcd-dim);
+    }
+
+    .lcd-line + .lcd-line {
+      border-top: 1px solid #0d200d;
+      margin-top: 0.3rem;
+      padding-top: 0.3rem;
+    }
+
+    /* Cursor blink */
+    .cursor {
+      display: inline-block;
+      width: 0.6em;
+      height: 1em;
+      background: var(--lcd-on);
+      margin-left: 1px;
+      animation: blink 1s step-end infinite;
+      vertical-align: text-bottom;
+      opacity: 0.8;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 0; }
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.8rem;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.3;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .card-title {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.2rem;
+    }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.65rem 0.8rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(0,229,255,0.08);
+    }
+
+    .field input::placeholder {
+      color: var(--text-dim);
+      opacity: 0.5;
+    }
+
+    .char-count {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-align: right;
+      margin-top: 0.25rem;
+      transition: color 0.2s;
+    }
+
+    .char-count.warn { color: var(--warn); }
+    .char-count.ok   { color: var(--accent2); }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .mode-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.6rem;
+      font-family: var(--font-ui);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .mode-btn.active {
+      background: rgba(0,229,255,0.08);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .mode-btn:hover:not(.active) {
+      border-color: #2a3540;
+      color: var(--text);
+    }
+
+    /* Time field */
+    .time-field {
+      display: none;
+    }
+
+    .time-field.visible {
+      display: block;
+    }
+
+    .time-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .time-row input {
+      width: 80px;
+      flex-shrink: 0;
+    }
+
+    .time-presets {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.35rem 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* API Key */
+    .api-row {
+      position: relative;
+    }
+
+    .api-row input {
+      padding-right: 2.8rem;
+      font-size: 0.75rem;
+    }
+
+    .toggle-key {
+      position: absolute;
+      right: 0.6rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      padding: 0.2rem;
+      transition: color 0.2s;
+    }
+
+    .toggle-key:hover { color: var(--accent); }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 0.85rem;
+      font-family: var(--font-ui);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      transform: translateX(-100%);
+      transition: transform 0.2s;
+      z-index: 0;
+    }
+
+    .submit-btn:hover::before { transform: translateX(0); }
+    .submit-btn:hover { color: var(--bg); }
+    .submit-btn span { position: relative; z-index: 1; }
+
+    .submit-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .submit-btn:disabled::before { display: none; }
+    .submit-btn:disabled:hover { color: var(--accent); }
+
+    /* Status */
+    .status {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 4px;
+      margin-top: 0.8rem;
+      display: none;
+      letter-spacing: 0.05em;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .status.visible { display: flex; }
+
+    .status.success {
+      background: rgba(0,255,157,0.07);
+      border: 1px solid rgba(0,255,157,0.25);
+      color: var(--accent2);
+    }
+
+    .status.error {
+      background: rgba(255,107,53,0.07);
+      border: 1px solid rgba(255,107,53,0.25);
+      color: var(--warn);
+    }
+
+    .status.loading {
+      background: rgba(0,229,255,0.07);
+      border: 1px solid rgba(0,229,255,0.2);
+      color: var(--accent);
+    }
+
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .success .dot { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+    .error   .dot { background: var(--warn);    box-shadow: 0 0 6px var(--warn); }
+    .loading .dot {
+      background: var(--accent);
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      margin-top: 1.5rem;
+      letter-spacing: 0.1em;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <div class="header-tag">// ESP8266 LCD Controller</div>
+      <h1>MSG <span>POSTER</span></h1>
+      <div class="header-sub">api.imjoseph.com/v1/messages</div>
+    </div>
+
+    <!-- LCD Preview -->
+    <div class="lcd-wrap">
+      <div class="lcd">
+        <div class="lcd-line" id="preview-l1"><span class="cursor"></span></div>
+        <div class="lcd-line dim" id="preview-l2">________________</div>
+      </div>
+    </div>
+
+    <!-- Mode -->
+    <div class="card">
+      <div class="card-title">// Transmission Mode</div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btn-live" onclick="setMode('live')">⚡ Live</button>
+        <button class="mode-btn"        id="btn-db"   onclick="setMode('db')">🗄 Database</button>
+      </div>
+
+      <!-- Line One -->
+      <div class="field">
+        <label>Line One</label>
+        <input type="text" id="line1" maxlength="16" placeholder="Up to 16 chars" oninput="updatePreview()" autocomplete="off"/>
+        <div class="char-count" id="cc1">0 / 16</div>
+      </div>
+
+      <!-- Line Two -->
+      <div class="field">
+        <label>Line Two</label>
+        <input type="text" id="line2" maxlength="16" placeholder="Up to 16 chars" oninput="updatePreview()" autocomplete="off"/>
+        <div class="char-count" id="cc2">0 / 16</div>
+      </div>
+
+      <!-- Display Time (live only) -->
+      <div class="field time-field visible" id="time-field">
+        <label>Display Time</label>
+        <div class="time-row">
+          <input type="number" id="display-time" value="30" min="1" max="3600" placeholder="sec"/>
+          <div class="time-presets">
+            <button class="preset-btn" onclick="setTime(10)">10s</button>
+            <button class="preset-btn" onclick="setTime(30)">30s</button>
+            <button class="preset-btn" onclick="setTime(60)">1m</button>
+            <button class="preset-btn" onclick="setTime(300)">5m</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Key -->
+      <div class="field">
+        <label>API Key</label>
+        <div class="api-row">
+          <input type="password" id="api-key" placeholder="X-API-Key" value="" autocomplete="off"/>
+          <button class="toggle-key" onclick="toggleKey()" title="Show/hide key">👁</button>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" onclick="sendMessage()">
+        <span id="btn-text">▶ Transmit Message</span>
+      </button>
+
+      <div class="status" id="status">
+        <div class="dot"></div>
+        <span id="status-text"></span>
+      </div>
+    </div>
+
+    <div class="footer">ESP8266 // LCD16x2 // imjoseph.com</div>
+  </div>
+
+  <script>
+    let mode = 'live';
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('btn-live').classList.toggle('active', m === 'live');
+      document.getElementById('btn-db').classList.toggle('active',   m === 'db');
+      document.getElementById('time-field').classList.toggle('visible', m === 'live');
+    }
+
+    function setTime(s) {
+      document.getElementById('display-time').value = s;
+    }
+
+    function updatePreview() {
+      const l1 = document.getElementById('line1').value;
+      const l2 = document.getElementById('line2').value;
+
+      const preview1 = document.getElementById('preview-l1');
+      const preview2 = document.getElementById('preview-l2');
+
+      // Pad to 16 chars, show cursor at end of active line
+      const pad = (s, active) => {
+        const padded = s.padEnd(16, ' ');
+        if (active && s.length < 16) {
+          return padded.slice(0, s.length) + '<span class="cursor"></span>' + padded.slice(s.length + 1);
+        }
+        return padded;
+      };
+
+      const focusedLine = document.activeElement.id === 'line2' ? 2 : 1;
+
+      if (l1.length === 0 && focusedLine === 1) {
+        preview1.innerHTML = '<span class="cursor"></span>';
+        preview1.classList.remove('dim');
+      } else {
+        preview1.innerHTML = pad(l1, focusedLine === 1);
+        preview1.classList.remove('dim');
+      }
+
+      if (l2.length === 0 && focusedLine !== 2) {
+        preview2.textContent = '________________';
+        preview2.classList.add('dim');
+      } else {
+        preview2.innerHTML = pad(l2, focusedLine === 2);
+        preview2.classList.remove('dim');
+      }
+
+      // Char counts
+      updateCount('cc1', l1.length);
+      updateCount('cc2', l2.length);
+    }
+
+    function updateCount(id, len) {
+      const el = document.getElementById(id);
+      el.textContent = `${len} / 16`;
+      el.className = 'char-count' + (len === 16 ? ' warn' : len > 0 ? ' ok' : '');
+    }
+
+    function toggleKey() {
+      const input = document.getElementById('api-key');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function encode(s) {
+      return encodeURIComponent(s);
+    }
+
+    function showStatus(type, msg) {
+      const el = document.getElementById('status');
+      el.className = `status visible ${type}`;
+      document.getElementById('status-text').textContent = msg;
+    }
+
+    async function sendMessage() {
+      const l1  = document.getElementById('line1').value.trim();
+      const l2  = document.getElementById('line2').value.trim();
+      const key = document.getElementById('api-key').value.trim();
+      const sec = document.getElementById('display-time').value;
+
+      if (!l1 && !l2) { showStatus('error', 'ERR: At least one line required'); return; }
+      if (!key)        { showStatus('error', 'ERR: API key is required'); return; }
+
+      let url;
+      if (mode === 'live') {
+        const t = parseInt(sec) || 30;
+        url = `http://api.imjoseph.com/v1/messages/${l1}/${l2}/${t}`;
+      } else {
+        url = `http://api.imjoseph.com/v1/messages/${l1}/${l2}`;
+      }
+
+      const btn = document.getElementById('submit-btn');
+      document.getElementById('btn-text').textContent = '⏳ Transmitting...';
+      btn.disabled = true;
+      showStatus('loading', 'Connecting to api.imjoseph.com...');
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'accept': 'application/json', 'X-API-Key': key }
+        });
+
+        if (res.ok) {
+          const modeLabel = mode === 'live' ? `LIVE · ${sec}s` : 'DB STORED';
+          showStatus('success', `OK ${res.status} — Message transmitted [${modeLabel}]`);
+        } else {
+          const body = await res.text().catch(() => '');
+          showStatus('error', `ERR ${res.status} — ${body || res.statusText}`);
+        }
+      } catch (err) {
+        showStatus('error', `ERR: ${err.message}`);
+      } finally {
+        document.getElementById('btn-text').textContent = '▶ Transmit Message';
+        btn.disabled = false;
+      }
+    }
+
+    // Init preview
+    updatePreview();
+
+    // Keep preview updated on focus changes
+    document.getElementById('line1').addEventListener('focus', updatePreview);
+    document.getElementById('line2').addEventListener('focus', updatePreview);
+    document.getElementById('line1').addEventListener('blur',  updatePreview);
+    document.getElementById('line2').addEventListener('blur',  updatePreview);
+  </script>
+</body>
+</html>
