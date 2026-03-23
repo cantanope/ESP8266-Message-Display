@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Security
+from fastapi import FastAPI, HTTPException, Security, Request
 from fastapi.security import APIKeyHeader
 import random
 import json
@@ -14,6 +14,13 @@ app = FastAPI()
 api_key_header = APIKeyHeader(name="X-API-Key")
 timeZone = pytz.timezone("America/Vancouver")
 
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 def verify_api_key(key: str = Security(api_key_header)):
     if key != API_KEY:
