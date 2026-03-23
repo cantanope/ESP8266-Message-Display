@@ -6,9 +6,13 @@ from datetime import datetime
 import pytz
 from dotenv import load_dotenv
 import os
+from fastapi.middleware.cors import CORSMiddleware
+
+
 
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
+
 app = FastAPI()
 
 api_key_header = APIKeyHeader(name="X-API-Key")
@@ -21,6 +25,13 @@ async def add_cors_headers(request: Request, call_next):
     response.headers["Access-Control-Allow-Methods"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "*"
     return response
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["POST", "GET"],
+    allow_headers=["X-API-Key", "Content-Type"],
+)
 
 def verify_api_key(key: str = Security(api_key_header)):
     if key != API_KEY:
