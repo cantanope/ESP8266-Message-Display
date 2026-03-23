@@ -27,15 +27,6 @@ Message messages[] = {
   {"You look so very", "beutiful today  "},
   {"You are going to", "do so good today"},
   {"Your smile is so", "perfect         "},
-  {"I think you are ", "so freaking cute"},
-  {"I am so happy   ", "being yours     "},
-  {"I am so very in ", "love with you   "},
-  {"You are going to", "do great things "},
-  {"All I want      ", "forever is you  "},
-  {"Your eyes look  ", "so beutiful     "},
-  {"I love your hair", "its so perfect  "},
-  {"You are my life ", "line. I'm lucky "},
-  {"I love your big ", "heart           "},
 };
 
 int messageCount = sizeof(messages) / sizeof(messages[0]);
@@ -71,10 +62,8 @@ void setup() {
 }
 
 void loop() {
-  //fetch message
   if ((millis() - lastTime) > timerDelay) {
     lastTime = millis();
-    //lcd.clear();
     if(WiFi.status()== WL_CONNECTED){
       WiFiClient client;
       HTTPClient http;
@@ -91,7 +80,6 @@ void loop() {
         const char* lineTwo = doc["line_two"];
         lcdPrint(0,0, lineOne);
         lcdPrint(1,0, lineTwo);
-        // Parse message and display on screen
       } else {
         Serial.printf("GET failed, error: %d\n", httpCode);
         // Print a message from the on board backup message library
