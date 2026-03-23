@@ -48,7 +48,12 @@ def get_message(api_key: str = Security(verify_api_key)):
         messageTime = datetime.strptime(liveMessage["currentTime"], "%Y-%m-%d %H:%M:%S")
         timeDifference = (now.replace(tzinfo=None) - messageTime).total_seconds()
         if timeDifference < int(liveMessage["displayTimeSeconds"]):
-            return {"line_one": liveMessage["line_one"], "line_two": liveMessage["line_two"], "displayTimeSeconds": liveMessage["displayTimeSeconds"], "currentTime": liveMessage["currentTime"]}
+            return {"line_one": liveMessage["line_one"], 
+                    "line_two": liveMessage["line_two"], 
+                    "displayTimeSeconds": liveMessage["displayTimeSeconds"], 
+                    "currentTime": liveMessage["currentTime"], 
+                    "serverTime": now.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S"), 
+                    "timeDifference": timeDifference,}
     
     messageFile = open("./messages.json", "r")
     messages = json.load(messageFile)
