@@ -44,7 +44,7 @@ def get_message(api_key: str = Security(verify_api_key)):
     liveMessage = json.load(livewMessageFile)
 
     if liveMessage["currentTime"] != "None":
-        now = datetime.now(timeZone)
+        now = datetime.now()
         messageTime = datetime.strptime(liveMessage["currentTime"], "%Y-%m-%d %H:%M:%S")
         timeDifference = (now.replace(tzinfo=None) - messageTime.replace(tzinfo=None)).total_seconds()
         if timeDifference < int(liveMessage["displayTimeSeconds"]):
@@ -90,12 +90,12 @@ def push_current_message(line_one: str, line_two: str, displayTimeSeconds: int, 
             {"line_one": line_one, 
              "line_two": line_two, 
              "displayTimeSeconds": displayTimeSeconds, 
-             "currentTime": now.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
+             "currentTime": now.strftime("%Y-%m-%d %H:%M:%S")
             }, f, indent=2)
     return {"message": 
             {"line_one": line_one, 
              "line_two": line_two
             },
             "displayTimeSeconds": displayTimeSeconds,
-            "currentTime": now.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S"),
+            "currentTime": now.strftime("%Y-%m-%d %H:%M:%S"),
             "status": "success"}
