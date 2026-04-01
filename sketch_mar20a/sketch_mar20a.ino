@@ -7,8 +7,8 @@
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for a 16 chars and 2 line display
 
 //Wifi Variables
-const char* wifiSSD = "J-IOT";
-const char* wifiPass = "Freak-2Thumb-Ghost!";
+const char* wifiSSD = "SSID";
+const char* wifiPass = "PASSWORD";
 
 //Api Variables
 const String apiURL = "http://api.imjoseph.com/v1/messages/";
